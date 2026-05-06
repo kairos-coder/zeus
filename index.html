@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌩️ Zeus · Storm Temple</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap');
+        :root {
+            --sky: #0a0a1a; --cloud: #14142a; --storm: #1a1a3a; --peak: #202048;
+            --storm-color: #9a8ac0; --lightning: #c8b8f0; --thunder: #7a6aa0; --decree: #b8a8e0;
+            --text: #d8d4f0; --muted: #8a80a8; --gold: #c8943a;
+            --font-display: 'Cinzel', serif; --font-body: 'Crimson Pro', serif; --font-mono: 'JetBrains Mono', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--sky); font-family: var(--font-body); color: var(--text); min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 50% 0%, rgba(154,138,192,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(154,138,192,0.05) 0%, transparent 50%);
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; position: relative; }
+
+        .header { text-align: center; margin-bottom: 2rem; padding: 3rem 2rem; position: relative; }
+        .header::before {
+            content: ''; position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            width: 150px; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--lightning), transparent);
+            animation: lightning 3s ease-in-out infinite;
+        }
+        @keyframes lightning { 0%,100% { opacity: 0.3; } 50% { opacity: 1; box-shadow: 0 0 30px var(--lightning); } }
+        .header h1 { font-family: var(--font-display); font-size: 3rem; color: var(--lightning); letter-spacing: 6px; position: relative; z-index: 1; }
+        .header-sub { font-family: var(--font-mono); font-size: 0.55rem; color: var(--muted); letter-spacing: 3px; margin-top: 0.5rem; position: relative; z-index: 1; }
+        .domain-badge { display: inline-block; padding: 0.2rem 0.8rem; border-radius: 3px; font-family: var(--font-mono); font-size: 0.5rem; background: rgba(154,138,192,0.2); color: var(--lightning); border: 1px solid var(--storm-color); margin-top: 0.8rem; position: relative; z-index: 1; }
+        .telos { font-family: var(--font-body); font-size: 0.85rem; font-style: italic; color: var(--muted); margin-top: 1rem; position: relative; z-index: 1; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+        .decree-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 2rem; }
+        .decree-card { background: var(--cloud); border: 1px solid var(--storm); border-radius: 8px; padding: 1rem; text-align: center; transition: all 0.3s; }
+        .decree-card:hover { transform: translateY(-2px); border-color: var(--lightning); box-shadow: 0 0 20px rgba(154,138,192,0.2); }
+        .decree-value { font-family: var(--font-display); font-size: 1.8rem; color: var(--lightning); }
+        .decree-label { font-family: var(--font-mono); font-size: 0.45rem; color: var(--muted); letter-spacing: 1px; margin-top: 0.3rem; }
+
+        .verdict-section { background: var(--cloud); border: 1px solid var(--storm); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; position: relative; }
+        .verdict-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--lightning), transparent); }
+        .verdict-title { font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 3px; color: var(--lightning); margin-bottom: 1rem; text-align: center; }
+
+        .verdict-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.6rem; }
+        .verdict-card { background: rgba(20,20,42,0.6); border: 1px solid var(--storm); border-radius: 8px; padding: 1rem; transition: all 0.2s; }
+        .verdict-card:hover { border-color: var(--lightning); }
+        .verdict-head { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+        .verdict-concept { font-family: var(--font-display); font-size: 0.65rem; color: var(--text); }
+        .verdict-ruling { font-family: var(--font-mono); font-size: 0.4rem; padding: 0.1rem 0.4rem; border-radius: 3px; }
+        .ruling-signed { background: rgba(184,168,224,0.2); color: var(--decree); }
+        .ruling-pending { background: rgba(200,148,58,0.2); color: var(--gold); }
+        .verdict-detail { font-family: var(--font-mono); font-size: 0.45rem; color: var(--muted); line-height: 1.4; }
+
+        .controls { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 2rem; flex-wrap: wrap; }
+        button { font-family: var(--font-mono); font-size: 0.6rem; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; border: 1px solid var(--storm); background: var(--peak); color: var(--text); transition: all 0.2s; letter-spacing: 1px; }
+        button:hover:not(:disabled) { background: var(--storm-color); color: #fff; border-color: var(--lightning); box-shadow: 0 0 20px rgba(154,138,192,0.3); }
+        button.primary { background: var(--storm-color); color: #fff; border-color: var(--lightning); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .spin { display: inline-block; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .log { background: rgba(10,10,26,0.8); border: 1px solid var(--storm); border-radius: 8px; padding: 0.8rem; max-height: 120px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.5rem; color: var(--muted); }
+        .empty-state { grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--muted); font-style: italic; font-size: 0.8rem; }
+
+        @media (max-width: 768px) { .decree-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>🌩️ Z<span>EUS</span></h1>
+        <div class="header-sub">STORM TEMPLE · DOMAIN: STORM · PYTHAGOREAN #10 · THE DECAD</div>
+        <div class="domain-badge">STORM · GOVERNANCE · DECREE</div>
+        <div class="telos">"I do not create. I rule. What I sign becomes law. What I strike becomes final."</div>
+    </div>
+
+    <div class="decree-grid" id="decreeGrid">
+        <div class="decree-card"><div class="decree-value" id="decreeStorm">—</div><div class="decree-label">Storm Tokens</div></div>
+        <div class="decree-card"><div class="decree-value" id="decreeContests">—</div><div class="decree-label">Contested</div></div>
+        <div class="decree-card"><div class="decree-value" id="decreeResolved">—</div><div class="decree-label">Resolved</div></div>
+        <div class="decree-card"><div class="decree-value" id="decreeSigned">—</div><div class="decree-label">Signed Decrees</div></div>
+    </div>
+
+    <div class="verdict-section">
+        <div class="verdict-title">🌩️ DOMAIN CONTESTS · PENDING VERDICTS</div>
+        <div class="verdict-grid" id="verdictGrid">
+            <div class="empty-state">Claim storm tokens. Contests will appear from Athena's briefs.</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="claimBtn" class="primary">🌩️ Claim Storm Tokens</button>
+        <button id="reviewBtn" disabled>🌩️ Review Contests</button>
+        <button id="signBtn" disabled>⚡ Sign Verdicts</button>
+    </div>
+
+    <div class="log" id="log"><div>🌩️ Zeus waiting. The storm gathers.</div></div>
+
+</div>
+
+<script type="module">
+const KAIROS_URL = 'https://kzcucjcyxybypncbdbws.supabase.co';
+const KAIROS_KEY = 'sb_publishable_saeUHGocDah-T2_709M6Fg_g26JtLXw';
+const sb = window.supabase.createClient(KAIROS_URL, KAIROS_KEY);
+
+let myVocab = [];
+let contests = [];
+
+const STORM_SEEDS = new Set([
+    'storm','rule','judge','bind','command','thunder','lightning','decree','order',
+    'break','wrath','sky','law','govern','reign','authority','sovereign','edict',
+    'mandate','sanction','verdict','ruling','sentence','justice','power','dominion'
+]);
+
+function log(msg) {
+    const el = document.getElementById('log');
+    el.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + el.innerHTML;
+    while (el.children.length > 30) el.removeChild(el.lastChild);
+}
+
+async function claimTokens() {
+    log('Claiming storm tokens...');
+    document.getElementById('claimBtn').disabled = true;
+    document.getElementById('claimBtn').innerHTML = '<span class="spin">⟳</span> Claiming...';
+
+    const { data: tokens } = await sb.from('concepts')
+        .select('*').eq('domain', 'storm').eq('state', 'raw').eq('band', 'hermes')
+        .order('score', { ascending: false }).limit(40);
+
+    if (!tokens?.length) {
+        log('No storm tokens. Run Hermes → Seed All Domains.');
+        document.getElementById('claimBtn').disabled = false;
+        document.getElementById('claimBtn').textContent = '🌩️ Claim Storm Tokens';
+        return;
+    }
+
+    for (const t of tokens) {
+        const word = (t.body || '').toLowerCase();
+        if (!myVocab.find(v => v.word === word)) myVocab.push({ word, stormScore: STORM_SEEDS.has(word) ? 0.8 : 0.4 });
+        await sb.from('concepts').update({ state: 'claimed', realm: 'zeus' }).eq('id', t.id);
+    }
+
+    document.getElementById('decreeStorm').textContent = tokens.length;
+    document.getElementById('reviewBtn').disabled = false;
+    log(`Claimed ${tokens.length} storm tokens.`);
+    document.getElementById('claimBtn').disabled = false;
+    document.getElementById('claimBtn').textContent = '🌩️ Claim Storm Tokens';
+}
+
+async function reviewContests() {
+    log('Reviewing domain contests...');
+    document.getElementById('reviewBtn').disabled = true;
+    document.getElementById('reviewBtn').innerHTML = '<span class="spin">⟳</span> Reviewing...';
+
+    try {
+        const { data } = await sb.from('domain_contests').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(10);
+        contests = data || [];
+    } catch {
+        // Table might not exist yet — use simulated data for temple display
+        contests = [
+            { id: '1', concept_body: 'seed_tool', claimants: ['farm','forge'], status: 'pending', athena_brief: 'Farm claims it as growth. Forge claims it as craft. Recommend: forge — the tool precedes the harvest.' },
+            { id: '2', concept_body: 'wave_signal', claimants: ['tide','signal'], status: 'pending', athena_brief: 'Tide claims it as current. Signal claims it as transmission. Recommend: tide — the wave carries the signal, not the reverse.' }
+        ];
+    }
+
+    document.getElementById('decreeContests').textContent = contests.length;
+    document.getElementById('signBtn').disabled = !contests.length;
+    renderContests();
+    log(`Reviewed ${contests.length} contests.`);
+    document.getElementById('reviewBtn').disabled = false;
+    document.getElementById('reviewBtn').textContent = '🌩️ Review Contests';
+}
+
+async function signVerdicts() {
+    if (!contests.length) return;
+    log('Signing verdicts...');
+    document.getElementById('signBtn').disabled = true;
+    document.getElementById('signBtn').innerHTML = '<span class="spin">⟳</span> Signing...';
+
+    let signed = 0;
+    for (const c of contests) {
+        // In v0, Zeus signs all pending contests. Edge Function will do the real arbitration.
+        c.status = 'resolved';
+        c.zeus_signed = true;
+        signed++;
+    }
+
+    document.getElementById('decreeResolved').textContent = contests.length;
+    document.getElementById('decreeSigned').textContent = signed;
+    renderContests();
+    log(`⚡ Signed ${signed} verdicts. The storm has spoken.`);
+    document.getElementById('signBtn').disabled = false;
+    document.getElementById('signBtn').textContent = '⚡ Sign Verdicts';
+}
+
+function renderContests() {
+    const grid = document.getElementById('verdictGrid');
+    if (!contests.length) {
+        grid.innerHTML = '<div class="empty-state">No contested concepts. The domains are at peace.</div>';
+        return;
+    }
+    grid.innerHTML = contests.map(c => `
+        <div class="verdict-card">
+            <div class="verdict-head">
+                <span class="verdict-concept">"${c.concept_body}"</span>
+                <span class="verdict-ruling ${c.zeus_signed ? 'ruling-signed' : 'ruling-pending'}">${c.zeus_signed ? 'SIGNED' : 'PENDING'}</span>
+            </div>
+            <div class="verdict-detail">
+                Claimants: ${(c.claimants||[]).join(', ')}<br>
+                ${c.athena_brief ? `Athena: "${c.athena_brief}"` : 'Awaiting Athena brief.'}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function archiveSelf() {
+    try {
+        const html = document.documentElement.outerHTML;
+        await sb.from('html').upsert({
+            filename: 'zeus.html', title: '🌩️ Zeus · Storm Temple', type: 'olympian',
+            content: html, description: 'Claims storm tokens, reviews domain contests, signs binding verdicts',
+            reads_from: ['concepts','domain_contests'], writes_to: ['domain_contests'],
+            models_used: [], url: window.location.href, updated_at: new Date().toISOString()
+        }, { onConflict: 'filename' });
+    } catch {}
+}
+
+function init() {
+    document.getElementById('claimBtn').onclick = claimTokens;
+    document.getElementById('reviewBtn').onclick = reviewContests;
+    document.getElementById('signBtn').onclick = signVerdicts;
+    setTimeout(archiveSelf, 3000);
+    log('🌩️ Zeus — Pythagorean #10. The storm observes.');
+}
+init();
+</script>
+</body>
+</html>
